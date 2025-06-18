@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 8000
 
 # Run Gunicorn with verbose logging
-CMD ["gunicorn", "-w", "4", "--bind", "0.0.0.0:${PORT:-8000}", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "--timeout", "30", "youtube_search_backend:app"]
+CMD ["gunicorn", "-w", "2", "--bind", "0.0.0.0:${PORT:-8000}", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "--timeout", "30", "youtube_search_backend:app"]
