@@ -8,6 +8,10 @@ import urllib.parse
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+@app.route('/')
+def home():
+    return "YouTube Search Backend is running"
+
 @app.route('/search')
 def search_youtube():
     query = request.args.get('query', '')
