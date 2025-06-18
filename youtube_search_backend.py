@@ -23,7 +23,7 @@ executor = ThreadPoolExecutor(max_workers=2)
 
 # yt-dlp configuration
 ydl_opts_search = {
-    'quiet': False,  # Enable logs for debugging
+    'quiet': False,
     'extract_flat': True,
     'skip_download': True,
     'format': 'best',
@@ -33,8 +33,8 @@ ydl_opts_search = {
     },
     'no_color': True,
     'logger': logger,
-    'default_search': 'ytsearch3',  # Limit to 3 results
-    'retries': 5,  # Increased retries
+    'default_search': 'ytsearch3',
+    'retries': 5,
     'socket_timeout': 10,
 }
 
