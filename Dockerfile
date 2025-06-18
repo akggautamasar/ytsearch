@@ -23,11 +23,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the port that Gunicorn will listen on
-# Koyeb typically exposes port 8000, but you can configure Gunicorn to use any port,
-# and Koyeb will automatically map it. We'll stick to 5000 as per your Python code's default.
-EXPOSE 5000
+# Koyeb typically exposes port 8000. Your Python script's default is 5000.
+# The CMD will use the PORT environment variable provided by Koyeb.
+EXPOSE 5000 # Keep 5000 here as your Python app runs on this by default.
 
-# Command to run the Flask application using Gunicorn, a production-ready WSGI server.
-# It binds to 0.0.0.0:5000 (accessible from outside the container on that port).
+# Command to run the Flask application using Gunicorn via the Python module system.
+# This is more robust than directly calling 'gunicorn'.
+# It binds to 0.0.0.0:$(PORT) which will be set by Koyeb (usually 8000).
 # 'youtube_search_backend:app' refers to the 'app' Flask instance within 'youtube_search_backend.py'.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "youtube_search_backend:app"]
+CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:${PORT}", "youtube_search_backend:app"]
