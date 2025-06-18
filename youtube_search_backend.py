@@ -1,29 +1,32 @@
-# youtube_search_backend.py
 import os
 import yt_dlp
 from flask import Flask, request, jsonify
-from flask_cors import CORS # Required for CORS if your frontend is on a different domain
+from flask_cors import CORS
+import logging
+
+# Set up logging for debugging and performance monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for requests from your AirDownloader frontend
+CORS(app)  # Enable CORS for frontend requests
 
-# Configure yt-dlp for search only (no download)
-# 'extract_flat': True - avoids deeper processing, just gets metadata quickly
-# 'skip_download': True - ensures no actual download happens here
-# 'quiet': True - suppresses console output from yt-dlp
-# 'default_search': 'ytsearch' - default to YouTube search if no specific prefix
+# Configure yt-dlp for search
 ydl_opts_search = {
     'quiet': True,
-    'extract_flat': True, # Get basic info without diving deep
-    'force_generic_extractor': False, # Allow specific extractors
-    'skip_download': True,
-    'format': 'best', # Just to get info, not relevant for flat extract
+    'extract_flat': True,  # Get metadata only
+    'skip_download': True,  # No downloading
+    'format': 'best',
     'noplaylist': True,
+    'default_search': 'ytsearch10',  # Default to top 10 results
+    'http_headers': {  # Mimic browser to reduce rate-limiting
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    },
 }
 
 @app.route("/")
 def health_check():
-    return "YouTube Search Backend is running!"
+    return "YouTube Search Backend is running!", 200
 
 @app.route("/search", methods=["GET"])
 def search_youtube():
@@ -31,36 +34,32 @@ def search_youtube():
     if not query:
         return jsonify({"error": "Missing 'query' parameter."}), 400
 
+    start_time = time.time()  # Measure performance
     try:
-        # Use ytsearch10 to get top 10 results
-        # You can adjust the number after 'ytsearch'
         with yt_dlp.YoutubeDL(ydl_opts_search) as ydl:
-            # yt-dlp's 'extract_info' will automatically handle the search
-            # result['entries'] will contain a list of video metadata
-            result = ydl.extract_info(f"ytsearch10:{query}", download=False)
+            result = ydl.extract_info(f"ytsearch:{query}", download=False)
             
             if not result or 'entries' not in result:
+                logger.info(f"No results for query: {query}")
                 return jsonify({"results": []}), 200
 
-            # Filter for relevant video details (title, thumbnail, actual video ID for URL)
-            search_results = []
-            for entry in result['entries']:
-                if entry.get('extractor_key') == 'Youtube' and entry.get('id'): # Ensure it's a YouTube video
-                    search_results.append({
-                        "title": entry.get('title', 'Unknown Title'),
-                        "thumbnail": entry.          get('thumbnail') or f"https://i.ytimg.com/vi/{entry['id']}/mqdefault.jpg", # Fallback thumbnail
-                        "url": f"https://www.youtube.com/watch?v={entry['id']}" # Full YouTube URL
-                    })
+            search_results = [
+                {
+                    "title": entry.get('title', 'Unknown Title'),
+                    "thumbnail": entry.get('thumbnail') or f"https://i.ytimg.com/vi/{entry['id']}/mqdefault.jpg",
+                    "url": f"https://www.youtube.com/watch?v={entry['id']}"
+                }
+                for entry in result['entries']
+                if entry.get('extractor_key') == 'Youtube' and entry.get('id')
+            ]
             
+            logger.info(f"Search for '{query}' took {time.time() - start_time:.2f} seconds")
             return jsonify({"results": search_results}), 200
 
     except Exception as e:
-        print(f"Error during YouTube search: {e}")
-        return jsonify({"error": "Failed to perform search. Make sure FFmpeg is installed and yt-dlp is up-to-date."}), 500
+        logger.error(f"Error during YouTube search: {str(e)}")
+        return jsonify({"error": "Failed to perform search. Try again later."}), 500
 
 if __name__ == "__main__":
-    # For local development:
-    # app.run(debug=True, host="0.0.0.0", port=5000)
-    # For production deployment on Koyeb, use their specified port (e.g., PORT env var)
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8000))  # Default to 8000 for Koyeb
     app.run(host="0.0.0.0", port=port)
