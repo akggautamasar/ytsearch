@@ -22,10 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your application code into the container
 COPY . .
 
-# Expose the port that Gunicorn will listen on
+# Expose the port that Gunicorn will listen on.
 # Koyeb typically exposes port 8000. Your Python script's default is 5000.
 # The CMD will use the PORT environment variable provided by Koyeb.
-EXPOSE 5000 # Keep 5000 here as your Python app runs on this by default.
+EXPOSE 5000 
+# Keep 5000 here as your Python app runs on this by default.
 
 # Command to run the Flask application using Gunicorn via the Python module system.
 # This is more robust than directly calling 'gunicorn'.
