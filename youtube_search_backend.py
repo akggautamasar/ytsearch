@@ -23,7 +23,7 @@ executor = ThreadPoolExecutor(max_workers=2)
 
 # yt-dlp configuration
 ydl_opts_search = {
-    'quiet': False,  # Enable yt-dlp logs for debugging
+    'quiet': False,  # Enable logs for debugging
     'extract_flat': True,
     'skip_download': True,
     'format': 'best',
@@ -32,10 +32,10 @@ ydl_opts_search = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
     },
     'no_color': True,
-    'logger': logger,  # Route yt-dlp logs to Flask logger
-    'default_search': 'ytsearch3',  # Limit to 3 results for speed
-    'retries': 3,  # Retry on transient errors
-    'socket_timeout': 10,  # Prevent hanging
+    'logger': logger,
+    'default_search': 'ytsearch3',  # Limit to 3 results
+    'retries': 5,  # Increased retries
+    'socket_timeout': 10,
 }
 
 def run_ydl(query):
@@ -91,7 +91,7 @@ def search_youtube():
     except yt_dlp.utils.DownloadError as e:
         logger.error(f"DownloadError for query '{query}': {str(e)}", exc_info=True)
         print(f"--- DEBUG: DownloadError: {str(e)} ---")
-        return jsonify({"error": "YouTube search failed, possibly due to rate-limiting or network issues."}), 500
+        return jsonify({"error": f"YouTube search failed: {str(e)}. Try again later."}), 500
     except Exception as e:
         logger.error(f"Unexpected error for query '{query}': {str(e)}", exc_info=True)
         print(f"--- DEBUG: Unexpected EXCEPTION: {str(e)} ---")
@@ -100,5 +100,6 @@ def search_youtube():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting YouTube Search Backend on port {port}")
+    logger.debug(f"Environment variables: {dict(os.environ)}")
     print(f"--- DEBUG: App is starting on port {port} [Thread: {threading.current_thread().name}] ---")
     app.run(host="0.0.0.0", port=port, debug=False)
